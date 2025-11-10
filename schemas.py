@@ -1,48 +1,36 @@
 """
-Database Schemas
+Database Schemas for Criminal DBMS
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model corresponds to one MongoDB collection.
+Collection name is the lowercase of the class name, e.g. Suspect -> "suspect".
 """
-
+from typing import List, Optional
 from pydantic import BaseModel, Field
-from typing import Optional
 
-# Example schemas (replace with your own):
+# Suspects hold core identity data and investigative attributes
+class Suspect(BaseModel):
+    full_name: str = Field(..., description="Legal full name")
+    aliases: List[str] = Field(default_factory=list, description="Known aliases")
+    dob: Optional[str] = Field(None, description="Date of birth (YYYY-MM-DD)")
+    last_known_location: Optional[str] = Field(None, description="City/Area last seen")
+    risk_level: str = Field("medium", description="low | medium | high")
+    status: str = Field("active", description="active | detained | cleared")
+    notes: Optional[str] = Field(None, description="Investigator notes")
+    tags: List[str] = Field(default_factory=list, description="Keywords for quick filtering")
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+# Evidence items are simple typed records linked inside cases
+class EvidenceItem(BaseModel):
+    type: str = Field(..., description="e.g., photo, video, document, dna")
+    description: Optional[str] = None
+    url: Optional[str] = Field(None, description="Optional reference or storage link")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+# Cases link suspects and evidence
+class Case(BaseModel):
+    title: str = Field(..., description="Case title")
+    description: Optional[str] = None
+    status: str = Field("open", description="open | in_progress | closed")
+    priority: str = Field("medium", description="low | medium | high | critical")
+    suspects: List[str] = Field(default_factory=list, description="Array of suspect ObjectId strings")
+    evidence: List[EvidenceItem] = Field(default_factory=list)
+    lead_detective: Optional[str] = None
+    tags: List[str] = Field(default_factory=list)
